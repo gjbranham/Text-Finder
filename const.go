@@ -1,0 +1,63 @@
+package main
+
+func getSearchStrings() []string {
+	return []string{
+		"bitfloor",
+		"roman",
+		"shtylman",
+		"shteilman",
+		"shteylman",
+		"david",
+		"mourra",
+		"attorney general",
+		"ny ag",
+		"nyag",
+		"department",
+		"department of financial services",
+		"kyle",
+		"Pineo",
+		"berding",
+		"weil",
+		"bitcointalk",
+		"fincen",
+		"nina",
+		"basu",
+		"btc",
+		"bitcoin",
+		"bitcoins",
+		"crypto",
+		"fraud",
+		"scam",
+		"stole",
+		"reddit",
+		"twitter",
+		"Wu",
+		"Patacchiola",
+		"Williams",
+		"Twigg",
+		"Youp",
+		"McBride",
+		"Arana",
+		"Cai",
+		"Wieland",
+		"Mays",
+		"O'Toole",
+		"Dezmin",
+	}
+}
+
+func getIgnoreExts() []string {
+	return []string{
+		".mkv",
+		".avi",
+		".mp4",
+		".mov",
+		".wmv",
+		".jpg",
+		".jpeg",
+		".png",
+		".gif",
+		".mp3",
+		".wav",
+	}
+}
