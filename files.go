@@ -15,13 +15,19 @@ import (
 func getAllFiles(root string) []string {
 	fileList := []string{}
 
+	ex, e := os.Executable()
+	if e != nil {
+		log.Fatal("Fatal error: could not determine path name for running executable")
+	}
+	exPath := filepath.Dir(ex)
+
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		ex, e := os.Executable()
+		info, e := os.Lstat(path)
 		if e != nil {
-			log.Fatal("Fatal error: could not determine path name for running executable")
+			log.Fatalf("Fatal error: could not retrieve file info for file '%v'", path)
 		}
-		exPath := filepath.Dir(ex)
-		if d.IsDir() || strings.Contains(path, exPath) || strings.Contains(path, "Documents/Bitfloor") || slices.Contains(getIgnoreExts(), filepath.Ext(path)) {
+
+		if d.IsDir() || strings.Contains(path, exPath) || (info.Mode()&os.ModeSymlink) == os.ModeSymlink || slices.Contains(getIgnoreExts(), filepath.Ext(path)) {
 			return nil
 		}
 		fileList = append(fileList, path)

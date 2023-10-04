@@ -12,7 +12,7 @@ func main() {
 
 	fileList := getAllFiles(startDir)
 
-	log.Printf("Found %v files in %v", len(fileList), time.Since(start))
+	log.Printf("Found %v matches in %v", len(fileList), time.Since(start))
 
 	divisor := 64
 	chunk := len(fileList) / divisor
