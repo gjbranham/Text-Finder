@@ -7,7 +7,6 @@ import (
 
 func main() {
 	startDir, _ := processArgs()
-	// copyDir := os.Mkdir(path.Join(saveDir, "fileCopies"), 0644)
 
 	start := time.Now()
 
@@ -19,7 +18,7 @@ func main() {
 	chunk := len(fileList) / divisor
 	remainder := len(fileList) - (divisor * chunk)
 
-	fileMatchCh := make(chan string)
+	fileMatchCh := make(chan string, len(fileList))
 	matchCountCh := make(chan int)
 
 	start = time.Now()
@@ -36,11 +35,10 @@ func main() {
 		matches += m
 	}
 
-	file_list := make([]string, 0)
+	matchedFiles := make([]string, 0)
 	for i := 0; i < matches; i++ {
 		f := <-fileMatchCh
-		file_list = append(file_list, f)
+		matchedFiles = append(matchedFiles, f)
 	}
-
-	log.Printf("Found %v matching files in %v", matches, time.Since(start))
+	log.Printf("Found %v matching files in %v", len(matchedFiles), time.Since(start))
 }

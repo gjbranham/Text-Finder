@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"io/fs"
 	"log"
@@ -51,6 +52,7 @@ func checkFilesForMatch(fileList []string, result chan string, numMatches chan i
 			}
 			for _, keyword := range getSearchStrings() {
 				if strings.Contains(string(buf[:bytesRead]), keyword) {
+					fmt.Printf("%v\n", file)
 					matches++
 					result <- file
 					mflag = 1
