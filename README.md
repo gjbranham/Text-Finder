@@ -1,2 +1,2 @@
-# file_search
-Primitive file search tool
+# File Search
+Primitive file search tool. Currently 
