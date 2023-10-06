@@ -1,6 +1,6 @@
-# File Search
+# Text Finder
 
-File search search tool utilizing some of Go's concurrency features. Currently very primitive, but works similarly to `grep`.
+Text Finder is a search tool utilizing some of Go's concurrency features. Currently very primitive, but works similarly to `grep`.
 
 Build:
 
