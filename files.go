@@ -8,12 +8,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"golang.org/x/exp/slices"
 )
 
-func getAllFiles(root string) []string {
-	fileList := []string{}
+func findFiles() {
+	var wg sync.WaitGroup
 
 	ex, e := os.Executable()
 	if e != nil {
@@ -21,60 +22,73 @@ func getAllFiles(root string) []string {
 	}
 	exPath := filepath.Dir(ex)
 
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		info, e := os.Lstat(path)
-		if e != nil {
-			log.Fatalf("Fatal error: could not retrieve file info for file '%v'", path)
+	if !*recurseSearch {
+		files, err := os.ReadDir(rootDir)
+		if err != nil {
+			log.Fatalf("Fatal error occurred while walking root dir: %v", err)
 		}
-
-		if d.IsDir() || strings.Contains(path, exPath) || (info.Mode()&os.ModeSymlink) == os.ModeSymlink || slices.Contains(getIgnoreExts(), filepath.Ext(path)) {
+		for _, fo := range files {
+			if fo.IsDir() || strings.Contains(fo.Name(), exPath) || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(fo.Name()))) {
+				continue
+			}
+			wg.Add(1)
+			go func(path string) {
+				defer wg.Done()
+				checkFileForMatch(path)
+			}(fo.Name())
+		}
+	} else {
+		err := filepath.Walk(rootDir, func(path string, info fs.FileInfo, err error) error {
+			if e != nil {
+				log.Fatalf("Fatal error: could not retrieve file info for file '%v'", path)
+			}
+			if info.IsDir() || strings.Contains(path, exPath) || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(path))) {
+				return nil
+			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				checkFileForMatch(path)
+			}()
 			return nil
+		})
+		if err != nil {
+			log.Fatalf("Fatal error occurred while walking directories: %v", err)
 		}
-		fileList = append(fileList, path)
-		return nil
-	})
-	if err != nil {
-		log.Fatalf("Fatal error occurred while walking directories: %v", err)
 	}
-	return fileList
+	wg.Wait()
 }
 
-func checkFilesForMatch(fileList []string, result chan string, numMatches chan int) {
+func checkFileForMatch(file string) {
 	chunk := 1024 * 1024
 	buf := make([]byte, chunk)
 
 	mflag := 0
-	matches := 0
 
-	for _, file := range fileList {
-		fileObj, err := os.Open(file)
+	fileObj, err := os.Open(file)
+	if err != nil {
+		log.Printf("Failed to open file '%v", file)
+	}
+	defer fileObj.Close()
+
+	for {
+		bytesRead, err := fileObj.Read(buf)
 		if err != nil {
-			log.Printf("Failed to open file '%v", file)
+			if err != io.EOF {
+				log.Printf("Failed to read chunk from file: %v", err.Error())
+			}
+			break
 		}
-		defer fileObj.Close()
-
-		for {
-			bytesRead, err := fileObj.Read(buf)
-			if err != nil {
-				if err != io.EOF {
-					log.Printf("Failed to read chunk from file: %v", err.Error())
-				}
+		for _, keyword := range terms {
+			if strings.Contains(string(buf[:bytesRead]), keyword) {
+				fmt.Printf("%v\n", file)
+				matchCounter.inc()
+				mflag = 1
 				break
 			}
-			for _, keyword := range getSearchStrings() {
-				if strings.Contains(string(buf[:bytesRead]), keyword) {
-					fmt.Printf("%v\n", file)
-					matches++
-					result <- file
-					mflag = 1
-					break
-				}
-			}
-			if mflag == 1 {
-				mflag = 0
-				break
-			}
+		}
+		if mflag == 1 {
+			break
 		}
 	}
-	numMatches <- matches
 }

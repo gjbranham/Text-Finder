@@ -1,12 +1,5 @@
 package main
 
-func getSearchStrings() []string {
-	return []string{
-		"griffin",
-		"branham",
-	}
-}
-
 func getIgnoreExts() []string {
 	return []string{
 		".mkv",
@@ -20,5 +13,9 @@ func getIgnoreExts() []string {
 		".gif",
 		".mp3",
 		".wav",
+		".pdf",
+		".heic",
+		".dmg",
+		".bin",
 	}
 }
