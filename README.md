@@ -1,5 +1,16 @@
 # File Search
 
-Primitive file search tool utilizing Go's concurrency features. Currently runs a hardcoded set of search terms, for experimental reasons. Will be expanded to ingest search terms via the command line or from a file, in the future.
+File search search tool utilizing some of Go's concurrency features. Currently very primitive, but works similarly to `grep`.
 
+Build:
+
+`go build`
+
+Invoke the tool:
+
+`./text-finder -r -d ~/Documents some text to search for`
+
+In this example the tool will search for the strings `["some", "text", "to", "search", "for"]` in all files recursively starting at `~/Documents`
+
+- Ignores most binary files by default
 - Currently does not support searching symlinks
