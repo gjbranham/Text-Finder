@@ -13,7 +13,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func getAllFiles(root string) {
+func findFiles() {
 	var wg sync.WaitGroup
 
 	ex, e := os.Executable()
@@ -22,24 +22,39 @@ func getAllFiles(root string) {
 	}
 	exPath := filepath.Dir(ex)
 
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		info, e := os.Lstat(path)
-		if e != nil {
-			log.Fatalf("Fatal error: could not retrieve file info for file '%v'", path)
+	if !*recurseSearch {
+		files, err := os.ReadDir(rootDir)
+		if err != nil {
+			log.Fatalf("Fatal error occurred while walking root dir: %v", err)
 		}
-
-		if d.IsDir() || strings.Contains(path, exPath) || (info.Mode()&os.ModeSymlink) == os.ModeSymlink || slices.Contains(getIgnoreExts(), filepath.Ext(path)) {
+		for _, fo := range files {
+			if fo.IsDir() || strings.Contains(fo.Name(), exPath) || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(fo.Name()))) {
+				continue
+			}
+			wg.Add(1)
+			go func(path string) {
+				defer wg.Done()
+				checkFileForMatch(path)
+			}(fo.Name())
+		}
+	} else {
+		err := filepath.Walk(rootDir, func(path string, info fs.FileInfo, err error) error {
+			if e != nil {
+				log.Fatalf("Fatal error: could not retrieve file info for file '%v'", path)
+			}
+			if info.IsDir() || strings.Contains(path, exPath) || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(path))) {
+				return nil
+			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				checkFileForMatch(path)
+			}()
 			return nil
+		})
+		if err != nil {
+			log.Fatalf("Fatal error occurred while walking directories: %v", err)
 		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			checkFileForMatch(path)
-		}()
-		return nil
-	})
-	if err != nil {
-		log.Fatalf("Fatal error occurred while walking directories: %v", err)
 	}
 	wg.Wait()
 }
@@ -64,7 +79,7 @@ func checkFileForMatch(file string) {
 			}
 			break
 		}
-		for _, keyword := range getSearchStrings() {
+		for _, keyword := range terms {
 			if strings.Contains(string(buf[:bytesRead]), keyword) {
 				fmt.Printf("%v\n", file)
 				matchCounter.inc()

@@ -1,28 +1,28 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"log"
 	"os"
 	"path/filepath"
 )
 
-func processArgs() (string, string) {
-	args := os.Args[1:]
+var rootDir string
+var recurseSearch *bool
+var terms []string
 
-	if len(args) != 2 {
-		fmt.Print("Please provide a start dir and a save dir")
-		os.Exit(1)
-	}
+func processArgs() {
 
-	start, err := filepath.Abs(args[0])
+	flag.StringVar(&rootDir, "d", "./", "Root directory to start searching for matches")
+	recurseSearch = flag.Bool("r", false, "Search recursively starting at the root directory")
+
+	flag.Parse()
+
+	terms = flag.Args()
+
+	start, err := filepath.Abs(rootDir)
 	if err != nil {
-		log.Fatalf("Failed generating abspath: %v", err)
-	}
-
-	save, err := filepath.Abs(args[1])
-	if err != nil {
-		log.Fatalf("Failed generating abspath: %v", err)
+		log.Fatalf("Could not determine path for root dir: %v", err)
 	}
 
 	if stat, err := os.Stat(start); err != nil {
@@ -30,12 +30,4 @@ func processArgs() (string, string) {
 	} else if !stat.IsDir() {
 		log.Fatalf("'%v' is not a directory", start)
 	}
-
-	if stat, err := os.Stat(save); err != nil {
-		os.Mkdir(save, 0644)
-	} else if !stat.IsDir() {
-		log.Fatalf("%v is a file, not directory", start)
-	}
-
-	return start, save
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -19,12 +20,18 @@ func (c *mutexCounter) inc() {
 
 var matchCounter *mutexCounter = new(mutexCounter)
 
+func init() {
+	processArgs()
+}
+
 func main() {
-	startDir, _ := processArgs()
+	fmt.Printf("Starting search at root dir: %v\n", rootDir)
+	fmt.Printf("Search terms: %v\n", terms)
+	fmt.Printf("Recursive: %v\n", *recurseSearch)
 
 	start := time.Now()
 
-	getAllFiles(startDir)
+	findFiles()
 
 	log.Printf("Found %v matching files in %v", matchCounter.count, time.Since(start))
 }
