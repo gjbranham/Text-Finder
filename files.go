@@ -15,12 +15,6 @@ import (
 func findFiles() {
 	var wg sync.WaitGroup
 
-	ex, e := os.Executable()
-	if e != nil {
-		log.Fatal("Fatal error: could not determine path name for running executable")
-	}
-	exPath := filepath.Dir(ex)
-
 	if !*recursiveSearch {
 		files, err := os.ReadDir(rootPath)
 		if err != nil {
@@ -31,7 +25,7 @@ func findFiles() {
 			log.Fatalf("Fatal error occurred while obtaining absolute path for starting point: %v\n", err)
 		}
 		for _, fo := range files {
-			if fo.IsDir() || strings.Contains(fo.Name(), exPath) || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(fo.Name()))) {
+			if fo.IsDir() || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(fo.Name()))) {
 				continue
 			}
 			wg.Add(1)
@@ -42,10 +36,10 @@ func findFiles() {
 		}
 	} else {
 		err := filepath.Walk(rootPath, func(path string, info fs.FileInfo, err error) error {
-			if e != nil {
-				log.Fatalf("Fatal error: could not retrieve file info for file '%v'", path)
+			if err != nil {
+				log.Fatalf("Fatal error: could not retrieve file info for file '%v'\n", path)
 			}
-			if info.IsDir() || strings.Contains(path, exPath) || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(path))) {
+			if info.IsDir() || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(path))) {
 				return nil
 			}
 			wg.Add(1)
@@ -56,7 +50,7 @@ func findFiles() {
 			return nil
 		})
 		if err != nil {
-			log.Fatalf("Fatal error occurred while walking directories: %v", err)
+			log.Fatalf("Fatal error occurred while walking directories: %v\n", err)
 		}
 	}
 	wg.Wait()
@@ -70,7 +64,7 @@ func checkFileForMatch(file string) {
 
 	fileObj, err := os.Open(file)
 	if err != nil {
-		log.Printf("Failed to open file '%v': %v", file, err)
+		log.Printf("Failed to open file '%v': %v\n", file, err)
 		return
 	}
 	defer fileObj.Close()
@@ -79,7 +73,7 @@ func checkFileForMatch(file string) {
 		bytesRead, err := fileObj.Read(buf)
 		if err != nil {
 			if err != io.EOF {
-				log.Printf("Failed to read chunk from file '%v': %v", file, err.Error())
+				log.Printf("Failed to read chunk from file '%v': %v\n", file, err.Error())
 			}
 			break
 		}
