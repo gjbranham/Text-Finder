@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"io/fs"
 	"log"
@@ -22,10 +21,14 @@ func findFiles() {
 	}
 	exPath := filepath.Dir(ex)
 
-	if !*recurseSearch {
-		files, err := os.ReadDir(rootDir)
+	if !*recursiveSearch {
+		files, err := os.ReadDir(rootPath)
 		if err != nil {
-			log.Fatalf("Fatal error occurred while walking root dir: %v", err)
+			log.Fatalf("Fatal error occurred while walking root dir: %v\n", err)
+		}
+		absPath, err := filepath.Abs(rootPath)
+		if err != nil {
+			log.Fatalf("Fatal error occurred while obtaining absolute path for starting point: %v\n", err)
 		}
 		for _, fo := range files {
 			if fo.IsDir() || strings.Contains(fo.Name(), exPath) || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(fo.Name()))) {
@@ -35,10 +38,10 @@ func findFiles() {
 			go func(path string) {
 				defer wg.Done()
 				checkFileForMatch(path)
-			}(fo.Name())
+			}(filepath.Join(absPath, fo.Name()))
 		}
 	} else {
-		err := filepath.Walk(rootDir, func(path string, info fs.FileInfo, err error) error {
+		err := filepath.Walk(rootPath, func(path string, info fs.FileInfo, err error) error {
 			if e != nil {
 				log.Fatalf("Fatal error: could not retrieve file info for file '%v'", path)
 			}
@@ -67,7 +70,8 @@ func checkFileForMatch(file string) {
 
 	fileObj, err := os.Open(file)
 	if err != nil {
-		log.Printf("Failed to open file '%v", file)
+		log.Printf("Failed to open file '%v': %v", file, err)
+		return
 	}
 	defer fileObj.Close()
 
@@ -75,13 +79,13 @@ func checkFileForMatch(file string) {
 		bytesRead, err := fileObj.Read(buf)
 		if err != nil {
 			if err != io.EOF {
-				log.Printf("Failed to read chunk from file: %v", err.Error())
+				log.Printf("Failed to read chunk from file '%v': %v", file, err.Error())
 			}
 			break
 		}
-		for _, keyword := range terms {
+		for _, keyword := range searchTerms {
 			if strings.Contains(string(buf[:bytesRead]), keyword) {
-				fmt.Printf("%v\n", file)
+				log.Printf("%v\n", file)
 				matchCounter.inc()
 				mflag = 1
 				break
