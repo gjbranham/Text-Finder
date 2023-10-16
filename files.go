@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io"
+	"bufio"
 	"io/fs"
 	"log"
 	"os"
@@ -57,9 +57,6 @@ func findFiles() {
 }
 
 func checkFileForMatch(file string) {
-	chunk := 1024
-	buf := make([]byte, chunk)
-
 	fileObj, err := os.Open(file)
 	if err != nil {
 		log.Printf("Failed to open file '%v': %v\n", file, err)
@@ -67,19 +64,13 @@ func checkFileForMatch(file string) {
 	}
 	defer fileObj.Close()
 
-	for {
-		bytesRead, err := fileObj.Read(buf)
-		if err != nil {
-			if err != io.EOF {
-				log.Printf("Failed to read chunk from file '%v': %v\n", file, err.Error())
-			}
-			break
-		}
-		for _, keyword := range args.searchTerms {
-			log.Printf("searching for: %v\n", keyword)
-			if strings.Contains(string(buf[:bytesRead]), strings.TrimSpace(keyword)) {
+	r := bufio.NewScanner(fileObj)
+	for r.Scan() {
+		line := r.Text()
+		for _, key := range args.searchTerms {
+			if strings.Contains(line, strings.TrimSpace(key)) {
 				matchInfo.counterInc()
-				matchInfo.addMatch(fileInfo{key: keyword, file: file})
+				matchInfo.addMatch(fileInfo{key: key, file: file})
 			}
 		}
 	}
