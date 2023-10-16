@@ -39,7 +39,7 @@ var matchInfo *matchInformation = new(matchInformation)
 var padding int = 0
 
 func main() {
-	// Can't set flags in init() because of startup order on tests
+	// can't set flags in init() because of startup order on tests
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 	processArgs()
 
@@ -62,8 +62,9 @@ func main() {
 		checkFileForMatch(args.rootPath)
 	}
 
+	// sort for nice looking output
 	sort.Slice(matchInfo.matches, func(i, j int) bool {
-		return matchInfo.matches[i].key < matchInfo.matches[j].key
+		return matchInfo.matches[i].key < matchInfo.matches[j].key && matchInfo.matches[i].file < matchInfo.matches[j].file
 	})
 
 	uniqFiles := make([]string, 0)
