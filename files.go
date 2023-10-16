@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io"
+	"bufio"
 	"io/fs"
 	"log"
 	"os"
@@ -15,12 +15,12 @@ import (
 func findFiles() {
 	var wg sync.WaitGroup
 
-	if !*recursiveSearch {
-		files, err := os.ReadDir(rootPath)
+	if !args.recursiveSearch {
+		files, err := os.ReadDir(args.rootPath)
 		if err != nil {
 			log.Fatalf("Fatal error occurred while walking root dir: %v\n", err)
 		}
-		absPath, err := filepath.Abs(rootPath)
+		absPath, err := filepath.Abs(args.rootPath)
 		if err != nil {
 			log.Fatalf("Fatal error occurred while obtaining absolute path for starting point: %v\n", err)
 		}
@@ -35,7 +35,7 @@ func findFiles() {
 			}(filepath.Join(absPath, fo.Name()))
 		}
 	} else {
-		err := filepath.Walk(rootPath, func(path string, info fs.FileInfo, err error) error {
+		err := filepath.Walk(args.rootPath, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				log.Fatalf("Fatal error: could not retrieve file info for file '%v'\n", path)
 			}
@@ -57,11 +57,6 @@ func findFiles() {
 }
 
 func checkFileForMatch(file string) {
-	chunk := 1024 * 1024
-	buf := make([]byte, chunk)
-
-	mflag := 0
-
 	fileObj, err := os.Open(file)
 	if err != nil {
 		log.Printf("Failed to open file '%v': %v\n", file, err)
@@ -69,24 +64,14 @@ func checkFileForMatch(file string) {
 	}
 	defer fileObj.Close()
 
-	for {
-		bytesRead, err := fileObj.Read(buf)
-		if err != nil {
-			if err != io.EOF {
-				log.Printf("Failed to read chunk from file '%v': %v\n", file, err.Error())
+	r := bufio.NewScanner(fileObj)
+	for r.Scan() {
+		line := r.Text()
+		for _, key := range args.searchTerms {
+			if strings.Contains(line, strings.TrimSpace(key)) {
+				matchInfo.counterInc()
+				matchInfo.addMatch(fileInfo{key: key, file: file})
 			}
-			break
-		}
-		for _, keyword := range searchTerms {
-			if strings.Contains(string(buf[:bytesRead]), keyword) {
-				log.Printf("%v\n", file)
-				matchCounter.inc()
-				mflag = 1
-				break
-			}
-		}
-		if mflag == 1 {
-			break
 		}
 	}
 }
