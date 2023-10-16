@@ -20,28 +20,28 @@ func (c *mutexCounter) inc() {
 
 var matchCounter *mutexCounter = new(mutexCounter)
 
-func init() {
-	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
-	processArgs()
-}
 
 func main() {
-	log.Printf("Starting search at: %v\n", rootPath)
-	log.Printf("Search terms: %v\n", searchTerms)
-	log.Printf("Recursive: %v\n", *recursiveSearch)
+	// Can't set flags in init() because startup order
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+	processArgs()
+
+	log.Printf("Starting search at: %v\n", args.rootPath)
+	log.Printf("Search terms: %v\n", args.searchTerms)
+	log.Printf("Recursive: %v\n", args.recursiveSearch)
 	log.Print("-----Results-----\n")
 
 	start := time.Now()
 
-	info, err := os.Stat(rootPath)
+	info, err := os.Stat(args.rootPath)
 	if err != nil {
-		log.Fatalf("Fatal error: could not get info for path '%v'\n", rootPath)
+		log.Fatalf("Fatal error: could not get info for path '%v'\n", args.rootPath)
 	}
 
 	if info.IsDir() {
 		findFiles()
 	} else {
-		checkFileForMatch(rootPath)
+		checkFileForMatch(args.rootPath)
 	}
 
 	log.Printf("-----------------\n")

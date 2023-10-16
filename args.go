@@ -4,15 +4,19 @@ import (
 	"flag"
 )
 
-var rootPath string
-var recursiveSearch *bool
-var searchTerms []string
+type arguments struct {
+	rootPath        string
+	recursiveSearch bool
+	searchTerms     []string
+}
+
+var args arguments
 
 func processArgs() {
-	flag.StringVar(&rootPath, "d", "./", "Root directory to start searching for matches")
-	recursiveSearch = flag.Bool("r", false, "Search recursively starting at the root directory")
+	flag.StringVar(&args.rootPath, "d", "./", "Root directory to start searching for matches")
+	flag.BoolVar(&args.recursiveSearch, "r", false, "Search recursively starting at the root directory")
 
 	flag.Parse()
 
-	searchTerms = flag.Args()
+	args.searchTerms = flag.Args()
 }

@@ -15,12 +15,12 @@ import (
 func findFiles() {
 	var wg sync.WaitGroup
 
-	if !*recursiveSearch {
-		files, err := os.ReadDir(rootPath)
+	if !args.recursiveSearch {
+		files, err := os.ReadDir(args.rootPath)
 		if err != nil {
 			log.Fatalf("Fatal error occurred while walking root dir: %v\n", err)
 		}
-		absPath, err := filepath.Abs(rootPath)
+		absPath, err := filepath.Abs(args.rootPath)
 		if err != nil {
 			log.Fatalf("Fatal error occurred while obtaining absolute path for starting point: %v\n", err)
 		}
@@ -35,7 +35,7 @@ func findFiles() {
 			}(filepath.Join(absPath, fo.Name()))
 		}
 	} else {
-		err := filepath.Walk(rootPath, func(path string, info fs.FileInfo, err error) error {
+		err := filepath.Walk(args.rootPath, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				log.Fatalf("Fatal error: could not retrieve file info for file '%v'\n", path)
 			}
@@ -77,7 +77,7 @@ func checkFileForMatch(file string) {
 			}
 			break
 		}
-		for _, keyword := range searchTerms {
+		for _, keyword := range args.searchTerms {
 			if strings.Contains(string(buf[:bytesRead]), keyword) {
 				log.Printf("%v\n", file)
 				matchCounter.inc()
