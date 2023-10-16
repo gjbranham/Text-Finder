@@ -64,14 +64,22 @@ func checkFileForMatch(file string) {
 	}
 	defer fileObj.Close()
 
+	localMatchCnt := 0
+	localMatchList := []fileInfo{}
+
 	r := bufio.NewScanner(fileObj)
 	for r.Scan() {
 		line := r.Text()
 		for _, key := range args.searchTerms {
-			if strings.Contains(line, strings.TrimSpace(key)) {
-				matchInfo.counterInc()
-				matchInfo.addMatch(fileInfo{key: key, file: file})
+			if strings.Contains(line, "\x00") {
+				log.Printf("Ignoring binary file %v", file)
+				return
+			} else if strings.Contains(line, strings.TrimSpace(key)) {
+				localMatchCnt++
+				localMatchList = append(localMatchList, fileInfo{key: key, file: file})
 			}
 		}
 	}
+	matchInfo.counterInc(localMatchCnt)
+	matchInfo.addMatch(localMatchList...)
 }

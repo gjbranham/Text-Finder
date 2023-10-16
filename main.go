@@ -22,16 +22,16 @@ type matchInformation struct {
 	matches []fileInfo
 }
 
-func (c *matchInformation) counterInc() {
+func (c *matchInformation) counterInc(count int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.count++
+	c.count = c.count + count
 }
 
-func (c *matchInformation) addMatch(info fileInfo) {
+func (c *matchInformation) addMatch(info ...fileInfo) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.matches = append(c.matches, info)
+	c.matches = append(c.matches, info...)
 }
 
 var matchInfo *matchInformation = new(matchInformation)
