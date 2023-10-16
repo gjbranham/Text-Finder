@@ -1,35 +1,53 @@
 package main
 
 import (
+	// "fmt"
+	"fmt"
 	"log"
 	"os"
+	"sort"
 	"sync"
 	"time"
+
+	"golang.org/x/exp/slices"
 )
 
-type mutexCounter struct {
-	mu    sync.Mutex
-	count int
+type fileInfo struct {
+	key, file string
 }
 
-func (c *mutexCounter) inc() {
+type matchInformation struct {
+	mu      sync.Mutex
+	count   int
+	matches []fileInfo
+}
+
+func (c *matchInformation) counterInc() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.count++
 }
 
-var matchCounter *mutexCounter = new(mutexCounter)
+func (c *matchInformation) addMatch(info fileInfo) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.matches = append(c.matches, info)
+}
 
+var matchInfo *matchInformation = new(matchInformation)
+
+var padding int = 0
 
 func main() {
-	// Can't set flags in init() because startup order
+	// Can't set flags in init() because of startup order on tests
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 	processArgs()
 
-	log.Printf("Starting search at: %v\n", args.rootPath)
-	log.Printf("Search terms: %v\n", args.searchTerms)
-	log.Printf("Recursive: %v\n", args.recursiveSearch)
-	log.Print("-----Results-----\n")
+	for _, t := range args.searchTerms {
+		if len(t) > padding {
+			padding = len(t)
+		}
+	}
 
 	start := time.Now()
 
@@ -44,6 +62,19 @@ func main() {
 		checkFileForMatch(args.rootPath)
 	}
 
-	log.Printf("-----------------\n")
-	log.Printf("Found %v matching files in %v", matchCounter.count, time.Since(start))
+	sort.Slice(matchInfo.matches, func(i, j int) bool {
+		return matchInfo.matches[i].key < matchInfo.matches[j].key
+	})
+
+	uniqFiles := make([]string, 0)
+
+	customFmt := fmt.Sprintf("%%-%ds: %%s\n", padding)
+	for _, item := range matchInfo.matches {
+		log.Printf(customFmt, item.key, item.file)
+		if !slices.Contains(uniqFiles, item.file) {
+			uniqFiles = append(uniqFiles, item.file)
+		}
+	}
+
+	log.Printf("Found %v matches in %v files in %v", matchInfo.count, len(uniqFiles), time.Since(start))
 }

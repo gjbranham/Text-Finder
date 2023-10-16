@@ -57,10 +57,8 @@ func findFiles() {
 }
 
 func checkFileForMatch(file string) {
-	chunk := 1024 * 1024
+	chunk := 1024
 	buf := make([]byte, chunk)
-
-	mflag := 0
 
 	fileObj, err := os.Open(file)
 	if err != nil {
@@ -78,15 +76,11 @@ func checkFileForMatch(file string) {
 			break
 		}
 		for _, keyword := range args.searchTerms {
-			if strings.Contains(string(buf[:bytesRead]), keyword) {
-				log.Printf("%v\n", file)
-				matchCounter.inc()
-				mflag = 1
-				break
+			log.Printf("searching for: %v\n", keyword)
+			if strings.Contains(string(buf[:bytesRead]), strings.TrimSpace(keyword)) {
+				matchInfo.counterInc()
+				matchInfo.addMatch(fileInfo{key: keyword, file: file})
 			}
-		}
-		if mflag == 1 {
-			break
 		}
 	}
 }

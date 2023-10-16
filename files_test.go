@@ -25,6 +25,7 @@ func TestMain(m *testing.M) {
 
 func TestBasicUsage(t *testing.T) {
 	WriteFile("TestBasicUsage", "foo")
+	t.Run()
 
 }
 

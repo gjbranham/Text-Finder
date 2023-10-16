@@ -17,4 +17,8 @@ Some notes:
 - Ignores most binary files by default
 - Currently does not support searching symlinks
 - Unit tests are in development
-- More features are planned to be added
+
+Features we plan to add:
+- Option to turn off case sensitivity
+- Option to end search after 1st match
+- Option to load search terms from file, and write results to file and/or copy matching files to new folder
