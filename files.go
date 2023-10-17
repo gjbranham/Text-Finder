@@ -64,6 +64,7 @@ func checkFileForMatch(file string) {
 	}
 	defer fileObj.Close()
 
+	lineNum := 1
 	localMatchCnt := 0
 	localMatchList := []fileInfo{}
 
@@ -76,9 +77,10 @@ func checkFileForMatch(file string) {
 				return
 			} else if strings.Contains(line, strings.TrimSpace(key)) {
 				localMatchCnt++
-				localMatchList = append(localMatchList, fileInfo{key: key, file: file})
+				localMatchList = append(localMatchList, fileInfo{key: key, file: file, lineNum: lineNum})
 			}
 		}
+		lineNum++
 	}
 	matchInfo.counterInc(localMatchCnt)
 	matchInfo.addMatch(localMatchList...)
