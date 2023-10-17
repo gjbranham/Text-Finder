@@ -14,6 +14,7 @@ import (
 
 type fileInfo struct {
 	key, file string
+	lineNum   int
 }
 
 type matchInformation struct {
@@ -49,12 +50,12 @@ func main() {
 		}
 	}
 
-	start := time.Now()
-
 	info, err := os.Stat(args.rootPath)
 	if err != nil {
 		log.Fatalf("Fatal error: could not get info for path '%v'\n", args.rootPath)
 	}
+
+	start := time.Now()
 
 	if info.IsDir() {
 		findFiles()
@@ -64,14 +65,17 @@ func main() {
 
 	// sort for nice looking output
 	sort.Slice(matchInfo.matches, func(i, j int) bool {
-		return matchInfo.matches[i].key < matchInfo.matches[j].key && matchInfo.matches[i].file < matchInfo.matches[j].file
+		if matchInfo.matches[i].key == matchInfo.matches[j].key {
+			return matchInfo.matches[i].file < matchInfo.matches[j].file
+		}
+		return matchInfo.matches[i].key < matchInfo.matches[j].key
 	})
 
 	uniqFiles := make([]string, 0)
 
-	customFmt := fmt.Sprintf("%%-%ds: %%s\n", padding)
+	customFmt := fmt.Sprintf("%%-%ds: %%s line %%v", padding)
 	for _, item := range matchInfo.matches {
-		log.Printf(customFmt, item.key, item.file)
+		log.Printf(customFmt, item.key, item.file, item.lineNum)
 		if !slices.Contains(uniqFiles, item.file) {
 			uniqFiles = append(uniqFiles, item.file)
 		}
