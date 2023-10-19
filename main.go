@@ -42,7 +42,6 @@ var globalArgs *arguments
 var padding int = 0
 
 func main() {
-	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 	args, out, err := processArgs(os.Args[0], os.Args[1:])
 	if err == flag.ErrHelp {
 		log.Print(out)

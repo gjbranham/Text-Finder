@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"log"
 )
 
 type arguments struct {
@@ -12,6 +13,7 @@ type arguments struct {
 }
 
 func processArgs(exeName string, sysArgs []string) (parsedArgs *arguments, output string, err error) {
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 	flags := flag.NewFlagSet(exeName, flag.ContinueOnError)
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
