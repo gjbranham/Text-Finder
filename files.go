@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"golang.org/x/exp/slices"
 )
 
 func findFiles() {
@@ -24,7 +22,7 @@ func findFiles() {
 			log.Fatalf("Fatal error occurred while obtaining absolute path for starting point: %v\n", err)
 		}
 		for _, fo := range files {
-			if fo.IsDir() || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(fo.Name()))) {
+			if fo.IsDir() {
 				continue
 			}
 			wg.Add(1)
@@ -38,7 +36,7 @@ func findFiles() {
 			if err != nil {
 				log.Fatalf("Fatal error: could not retrieve file info for file '%v'\n", path)
 			}
-			if info.IsDir() || slices.Contains(getIgnoreExts(), strings.ToLower(filepath.Ext(path))) {
+			if info.IsDir() {
 				return nil
 			}
 			wg.Add(1)
