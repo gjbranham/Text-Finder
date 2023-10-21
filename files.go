@@ -14,13 +14,12 @@ import (
 
 func findFiles() {
 	var wg sync.WaitGroup
-
-	if !args.recursiveSearch {
-		files, err := os.ReadDir(args.rootPath)
+	if !globalArgs.recursiveSearch {
+		files, err := os.ReadDir(globalArgs.rootPath)
 		if err != nil {
 			log.Fatalf("Fatal error occurred while walking root dir: %v\n", err)
 		}
-		absPath, err := filepath.Abs(args.rootPath)
+		absPath, err := filepath.Abs(globalArgs.rootPath)
 		if err != nil {
 			log.Fatalf("Fatal error occurred while obtaining absolute path for starting point: %v\n", err)
 		}
@@ -35,7 +34,7 @@ func findFiles() {
 			}(filepath.Join(absPath, fo.Name()))
 		}
 	} else {
-		err := filepath.Walk(args.rootPath, func(path string, info fs.FileInfo, err error) error {
+		err := filepath.Walk(globalArgs.rootPath, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				log.Fatalf("Fatal error: could not retrieve file info for file '%v'\n", path)
 			}
@@ -71,7 +70,7 @@ func checkFileForMatch(file string) {
 	r := bufio.NewScanner(fileObj)
 	for r.Scan() {
 		line := r.Text()
-		for _, key := range args.searchTerms {
+		for _, key := range globalArgs.searchTerms {
 			if strings.Contains(line, "\x00") {
 				log.Printf("Ignoring binary file %v", file)
 				return

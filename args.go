@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"flag"
+	"log"
 )
 
 type arguments struct {
@@ -10,13 +12,21 @@ type arguments struct {
 	searchTerms     []string
 }
 
-var args arguments
+func processArgs(exeName string, sysArgs []string) (parsedArgs *arguments, output string, err error) {
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+	flags := flag.NewFlagSet(exeName, flag.ContinueOnError)
+	var buf bytes.Buffer
+	flags.SetOutput(&buf)
 
-func processArgs() {
-	flag.StringVar(&args.rootPath, "d", "./", "Root directory to start searching for matches")
-	flag.BoolVar(&args.recursiveSearch, "r", false, "Search recursively starting at the root directory")
+	var args arguments
+	flags.StringVar(&args.rootPath, "d", "./", "Root directory to start searching for matches")
+	flags.BoolVar(&args.recursiveSearch, "r", false, "Search recursively starting at the root directory")
 
-	flag.Parse()
+	if err = flags.Parse(sysArgs); err != nil {
+		return nil, buf.String(), err
+	}
 
-	args.searchTerms = flag.Args()
+	args.searchTerms = flags.Args()
+
+	return &args, output, nil
 }
