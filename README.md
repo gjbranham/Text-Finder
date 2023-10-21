@@ -1,6 +1,6 @@
 # Text Finder
 
-Text Finder is an experimental search tool that works similarly to `grep`. It utilizing some of Go's concurrency features to speed up the search process.
+Text Finder is an experimental search tool that works similarly to `grep`. It utilizes Go's concurrency features to speed up the search process.
 
 Clone:
 
@@ -18,7 +18,7 @@ This will search for the strings `["foo", "bar", "baz"]` in all files recursivel
 
 Some notes:
 
-- Currently does not support searching symlinks
+- Currently does not follow symlinks
 - Unit tests are in development
 
 Features we plan to add:
