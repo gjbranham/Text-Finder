@@ -6,11 +6,12 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 )
 
 var matchInfo *matchInformation = new(matchInformation)
-var globalArgs *arguments
+var globalArgs *arguments = new(arguments)
 
 func main() {
 	args, out, err := processArgs(os.Args[0], os.Args[1:])
@@ -24,17 +25,22 @@ func main() {
 	}
 	globalArgs = args
 
-	info, err := os.Stat(globalArgs.rootPath)
+	absPath, err := filepath.Abs(globalArgs.rootPath)
 	if err != nil {
-		log.Fatalf("Fatal error: could not get info for path '%v'\n", globalArgs.rootPath)
+		log.Fatalf("Fatal error: could not resolve absolute path for '%v'\n", globalArgs.rootPath)
+	}
+
+	info, err := os.Stat(absPath)
+	if err != nil {
+		log.Fatalf("Fatal error: could not get info for path '%v'\n", absPath)
 	}
 
 	start := time.Now()
 
 	if info.IsDir() {
-		findFiles()
+		findFiles(absPath)
 	} else {
-		checkFileForMatch(globalArgs.rootPath)
+		checkFileForMatch(absPath)
 	}
 
 	printResults(start)
