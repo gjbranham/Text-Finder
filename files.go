@@ -2,53 +2,37 @@ package main
 
 import (
 	"bufio"
-	"io/fs"
 	"log"
 	"os"
-	"path/filepath"
+	"path"
 	"strings"
 	"sync"
 )
 
-func findFiles() {
+func findFiles(rootPath string) {
 	var wg sync.WaitGroup
-	if !globalArgs.recursiveSearch {
-		files, err := os.ReadDir(globalArgs.rootPath)
-		if err != nil {
-			log.Fatalf("Fatal error occurred while walking root dir: %v\n", err)
-		}
-		absPath, err := filepath.Abs(globalArgs.rootPath)
-		if err != nil {
-			log.Fatalf("Fatal error occurred while obtaining absolute path for starting point: %v\n", err)
-		}
-		for _, fo := range files {
-			if fo.IsDir() {
-				continue
-			}
+
+	files, err := os.ReadDir(rootPath)
+	if err != nil {
+		log.Fatalf("Fatal error occurred while walking root dir: %v\n", err)
+	}
+
+	for _, fo := range files {
+		path := path.Join(rootPath, fo.Name())
+
+		if fo.IsDir() && globalArgs.recursiveSearch {
 			wg.Add(1)
 			go func(path string) {
 				defer wg.Done()
-				checkFileForMatch(path)
-			}(filepath.Join(absPath, fo.Name()))
+				findFiles(path)
+			}(path)
 		}
-	} else {
-		err := filepath.Walk(globalArgs.rootPath, func(path string, info fs.FileInfo, err error) error {
-			if err != nil {
-				log.Fatalf("Fatal error: could not retrieve file info for file '%v'\n", path)
-			}
-			if info.IsDir() {
-				return nil
-			}
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				checkFileForMatch(path)
-			}()
-			return nil
-		})
-		if err != nil {
-			log.Fatalf("Fatal error occurred while walking directories: %v\n", err)
-		}
+
+		wg.Add(1)
+		go func(path string) {
+			defer wg.Done()
+			checkFileForMatch(path)
+		}(path)
 	}
 	wg.Wait()
 }

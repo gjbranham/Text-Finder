@@ -25,3 +25,4 @@ Features we plan to add:
 - Option to turn off case sensitivity
 - Option to terminate search after 1st match
 - Option to load search terms from file, and write results to file and/or copy matching files to folder
+ 
