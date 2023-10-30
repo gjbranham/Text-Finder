@@ -1,6 +1,6 @@
 # Text Finder
 
-Text Finder is an experimental search tool that works similarly to `grep`. It utilizes Go's concurrency features to speed up the search process.
+Text Finder is a search tool that works similarly to `grep`. It utilizes Go's concurrency features to dramatically speed up the search process.
 
 Clone:
 
@@ -8,11 +8,15 @@ Clone:
 
 Build:
 
-`cd Text-Finder && go build`
+`cd Text-Finder && make build`
+
+This will compile and install the binary in `[starting dir]/Text-Finder/bin/`. 
+
+We did not include a `run` Makefile target because the application is based around command-line arguments. Doing so would complicate running the program.
 
 Invoke:
 
-`./text-finder -r -d ~/Documents foo bar baz`
+`./Text-Finder/bin/text-finder -r -d ~/Documents foo bar baz`
 
 This will search for the strings `["foo", "bar", "baz"]` in all files recursively starting at `~/Documents`. It will search all lines of each non-binary file.
 

@@ -1,5 +1,5 @@
-module Software/personal/text-finder
+module github.com/gjbranham/Text-Finder
 
 go 1.20
 
-require golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
+require golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
