@@ -1,4 +1,4 @@
-package main
+package application
 
 import (
 	"bufio"
@@ -7,9 +7,11 @@ import (
 	"path"
 	"strings"
 	"sync"
+
+	c "github.com/gjbranham/Text-Finder/internal/concurrency"
 )
 
-func findFiles(rootPath string) {
+func (a *TextFinder) FindFiles(rootPath string) {
 	var wg sync.WaitGroup
 
 	files, err := os.ReadDir(rootPath)
@@ -20,24 +22,24 @@ func findFiles(rootPath string) {
 	for _, fo := range files {
 		path := path.Join(rootPath, fo.Name())
 
-		if fo.IsDir() && globalArgs.recursiveSearch {
+		if fo.IsDir() && a.Args.RecursiveSearch {
 			wg.Add(1)
 			go func(path string) {
 				defer wg.Done()
-				findFiles(path)
+				a.FindFiles(path)
 			}(path)
 		}
 
 		wg.Add(1)
 		go func(path string) {
 			defer wg.Done()
-			checkFileForMatch(path)
+			a.CheckFileForMatch(path)
 		}(path)
 	}
 	wg.Wait()
 }
 
-func checkFileForMatch(file string) {
+func (a *TextFinder) CheckFileForMatch(file string) {
 	fileObj, err := os.Open(file)
 	if err != nil {
 		log.Printf("Failed to open file '%v': %v\n", file, err)
@@ -47,22 +49,22 @@ func checkFileForMatch(file string) {
 
 	lineNum := 1
 	localMatchCnt := 0
-	localMatchList := []fileInfo{}
+	localMatchList := []c.FileInfo{}
 
 	r := bufio.NewScanner(fileObj)
 	for r.Scan() {
 		line := r.Text()
-		for _, key := range globalArgs.searchTerms {
+		for _, key := range a.Args.SearchTerms {
 			if strings.Contains(line, "\x00") {
 				log.Printf("Ignoring binary file %v", file)
 				return
 			} else if strings.Contains(line, strings.TrimSpace(key)) {
 				localMatchCnt++
-				localMatchList = append(localMatchList, fileInfo{key: key, file: file, lineNum: lineNum})
+				localMatchList = append(localMatchList, c.FileInfo{Key: key, File: file, LineNum: lineNum})
 			}
 		}
 		lineNum++
 	}
-	matchInfo.counterInc(localMatchCnt)
-	matchInfo.addMatch(localMatchList...)
+	a.MatchInfo.CounterInc(localMatchCnt)
+	a.MatchInfo.AddMatch(localMatchList...)
 }
