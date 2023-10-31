@@ -2,7 +2,6 @@ package output
 
 import (
 	"fmt"
-	"log"
 	"sort"
 	"time"
 
@@ -18,7 +17,7 @@ func PrintResults(start time.Time, searchTerms []string, matchInfo *c.MatchInfor
 
 	matchCount := printAndCountMatches(matchInfoCopy, searchTerms)
 
-	log.Printf("Found %v matches in %v files in %v", matchInfoCopy.Count, matchCount, time.Since(start))
+	Print(fmt.Sprintf("Found %v matches in %v files in %v", matchInfoCopy.Count, matchCount, time.Since(start)))
 }
 
 func copyMatchInfo(matchInfo *c.MatchInformation) *c.MatchInformation {
@@ -42,7 +41,7 @@ func printAndCountMatches(matchInfo *c.MatchInformation, searchTerms []string) i
 	uniqFiles := make([]string, 0)
 	customFmt := fmt.Sprintf("%%-%ds: %%s line %%v", padding)
 	for _, item := range matchInfo.Matches {
-		log.Printf(customFmt, item.Key, item.File, item.LineNum)
+		Print(fmt.Sprintf(customFmt, item.Key, item.File, item.LineNum))
 		if !slices.Contains(uniqFiles, item.File) {
 			uniqFiles = append(uniqFiles, item.File)
 		}
