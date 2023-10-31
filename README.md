@@ -12,7 +12,7 @@ Build:
 
 This will compile and install the binary in `[starting dir]/Text-Finder/bin/`. 
 
-We did not include a `run` Makefile target because the application is based around command-line arguments. Doing so would complicate invoking the application.
+We did not include a `run` Makefile target because the application is based around command-line arguments. Doing so would complicate invocation.
 
 Run unit tests:
 
