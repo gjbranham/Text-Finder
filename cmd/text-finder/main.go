@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -14,25 +14,26 @@ import (
 )
 
 func main() {
+	o.SetPrinter(&o.Stdout{})
 	args, out, err := args.ProcessArgs(os.Args[0], os.Args[1:])
 	if err == flag.ErrHelp {
-		log.Print(out)
+		o.P.Printer.Print(out)
 		os.Exit(2)
 	} else if err != nil {
-		log.Printf("Failed to parse command-line arguments: %v", err)
-		log.Printf("Info: %v\n", out)
+		o.Print(fmt.Sprintf("Failed to parse command-line arguments: %v", err))
+		o.Print(fmt.Sprintf("Info: %v\n", out))
 		os.Exit(1)
 	}
 	app := app.TextFinder{Args: args, MatchInfo: new(c.MatchInformation)}
 
 	absPath, err := filepath.Abs(app.Args.RootPath)
 	if err != nil {
-		log.Fatalf("Fatal error: could not resolve absolute path for '%v'\n", app.Args.RootPath)
+		o.Print(fmt.Sprintf("Fatal error: could not resolve absolute path for '%v'\n", app.Args.RootPath))
 	}
 
 	info, err := os.Stat(absPath)
 	if err != nil {
-		log.Fatalf("Fatal error: could not get info for path '%v'\n", absPath)
+		o.Print(fmt.Sprintf("Fatal error: could not get info for path '%v'\n", absPath))
 	}
 
 	start := time.Now()

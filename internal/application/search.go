@@ -2,13 +2,14 @@ package application
 
 import (
 	"bufio"
-	"log"
+	"fmt"
 	"os"
 	"path"
 	"strings"
 	"sync"
 
 	c "github.com/gjbranham/Text-Finder/internal/concurrency"
+	o "github.com/gjbranham/Text-Finder/internal/output"
 )
 
 func (a *TextFinder) FindFiles(rootPath string) {
@@ -16,7 +17,7 @@ func (a *TextFinder) FindFiles(rootPath string) {
 
 	files, err := os.ReadDir(rootPath)
 	if err != nil {
-		log.Fatalf("Fatal error occurred while walking root dir: %v\n", err)
+		o.Print(fmt.Sprintf("Fatal error occurred while walking root dir: %v\n", err))
 	}
 
 	for _, fo := range files {
@@ -42,7 +43,7 @@ func (a *TextFinder) FindFiles(rootPath string) {
 func (a *TextFinder) CheckFileForMatch(file string) {
 	fileObj, err := os.Open(file)
 	if err != nil {
-		log.Printf("Failed to open file '%v': %v\n", file, err)
+		o.Print(fmt.Sprintf("Failed to open file '%v': %v\n", file, err))
 		return
 	}
 	defer fileObj.Close()
@@ -56,7 +57,7 @@ func (a *TextFinder) CheckFileForMatch(file string) {
 		line := r.Text()
 		for _, key := range a.Args.SearchTerms {
 			if strings.Contains(line, "\x00") {
-				log.Printf("Ignoring binary file %v", file)
+				o.Print(fmt.Sprintf("Ignoring binary file %v", file))
 				return
 			} else if strings.Contains(line, strings.TrimSpace(key)) {
 				localMatchCnt++
