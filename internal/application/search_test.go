@@ -18,17 +18,13 @@ var test_dir = "/tmp/text-finder"
 var buf *bytes.Buffer = new(bytes.Buffer)
 
 func TestMain(m *testing.M) {
-	if err := os.Mkdir(test_dir, 0777); err != nil {
-		log.Fatalf("Failed to create testing directory '%v': %v\n", test_dir, err)
-	}
+	directorySetup()
 
 	o.SetPrinter(&o.Buffer{Buf: buf})
 
 	exitCode := m.Run()
 
-	if err := os.RemoveAll(test_dir); err != nil {
-		log.Fatalf("Failed to remove testing directory '%v': %v\n", test_dir, err)
-	}
+	directoryTeardown()
 
 	os.Exit(exitCode)
 }
@@ -36,7 +32,7 @@ func TestMain(m *testing.M) {
 func TestBasicUsage(t *testing.T) {
 	fileName := "TestBasicUsage"
 	key := "foo"
-	WriteFile(fileName, key)
+	writeTestFile(fileName, key)
 
 	os.Args = []string{"myapp", "-d", fmt.Sprintf("%v", test_dir), key}
 	args, _, _ := args.ProcessArgs(os.Args[0], os.Args[1:])
@@ -62,12 +58,36 @@ func TestBasicUsage(t *testing.T) {
 	if matchInfo.LineNum != 1 {
 		t.Errorf("Wrong line number saved for match\nExpected: %v\nGot:      %v\n", 1, matchInfo.LineNum)
 	}
-
 }
 
-func WriteFile(name string, content string) {
+func TestRecursiveSearch(t *testing.T) {
+}
+
+func writeTestFile(name string, content string) {
 	path := path.Join(test_dir, name)
 	if err := os.WriteFile(path, []byte(content), 0777); err != nil {
 		log.Fatalf("Failed to write file '%v': %v\n", path, err)
+	}
+}
+
+func directorySetup() {
+	if _, err := os.Stat(test_dir); !os.IsNotExist(err) {
+		if err == nil {
+			if err := os.RemoveAll(test_dir); err != nil {
+				log.Fatalf("Test directory already exists but could not be removed: %v\n", err)
+			}
+		} else {
+			log.Fatalf("Fatal error while attempting to retrieve information for '%v': %v\n", test_dir, err)
+		}
+	}
+
+	if err := os.Mkdir(test_dir, 0777); err != nil {
+		log.Fatalf("Failed to create testing directory: %v\n", err)
+	}
+}
+
+func directoryTeardown() {
+	if err := os.RemoveAll(test_dir); err != nil {
+		log.Fatalf("Failed to remove testing directory: %v\n", err)
 	}
 }
