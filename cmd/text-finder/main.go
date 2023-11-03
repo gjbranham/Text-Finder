@@ -15,6 +15,7 @@ import (
 
 func main() {
 	o.SetPrinter(&o.Stdout{})
+
 	args, out, err := args.ProcessArgs(os.Args[0], os.Args[1:])
 	if err == flag.ErrHelp {
 		o.P.Printer.Print(out)
