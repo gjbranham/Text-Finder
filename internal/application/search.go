@@ -59,7 +59,8 @@ func (a *TextFinder) CheckFileForMatch(file string) {
 			if strings.Contains(line, "\x00") {
 				o.Print(fmt.Sprintf("Ignoring binary file %v", file))
 				return
-			} else if strings.Contains(line, strings.TrimSpace(key)) {
+			}
+			if strings.Contains(line, key) || (strings.Contains(strings.ToLower(line), strings.ToLower(key)) && a.Args.CaseInsensitive) {
 				localMatchCnt++
 				localMatchList = append(localMatchList, c.FileInfo{Key: key, File: file, LineNum: lineNum})
 			}
