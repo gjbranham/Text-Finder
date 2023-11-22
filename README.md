@@ -26,8 +26,6 @@ This will search for the strings `["foo", "bar", "baz"]` in all files recursivel
 
 ### Notes:
 
-- Currently does not follow symlinks
-
 Planned features:
 - Option to terminate search after 1st match
 - Option to load search terms from file, and write results to file and/or copy matching files to folder

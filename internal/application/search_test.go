@@ -1,114 +1,192 @@
 package application
 
 import (
-	"fmt"
+	"bytes"
+	"errors"
+	"io/fs"
 	"log"
 	"os"
 	"path"
-	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gjbranham/Text-Finder/internal/args"
 	c "github.com/gjbranham/Text-Finder/internal/concurrency"
+	o "github.com/gjbranham/Text-Finder/internal/output"
 )
 
+/***
+- Need to add a test to verify multiple search terms from a file
+***/
+
 var testDir = "/tmp/text-finder"
+var buf *bytes.Buffer = new(bytes.Buffer)
 
 func TestMain(m *testing.M) {
-	directorySetup()
+	fileSetup()
+
+	o.SetPrinter(&o.Buffer{Buf: buf})
 
 	exitCode := m.Run()
 
-	directoryTeardown()
+	fileTeardown()
 
 	os.Exit(exitCode)
 }
 
-func TestSimpleRootLevelSearch(t *testing.T) {
-	fileName := "TestSimpleRootLevelSearch"
-	key := "foo"
-	writeTestFile(fileName, key)
-
-	os.Args = []string{"myapp", "-d", fmt.Sprintf("%v", testDir), key}
-	args, _, _ := args.ProcessArgs(os.Args[0], os.Args[1:])
-
-	app := TextFinder{Args: args, MatchInfo: new(c.MatchInformation)}
-
-	app.FindFiles(testDir)
-
-	if len(app.MatchInfo.Matches) != 1 {
-		t.Errorf("Wrong number of file matches\nExpected: 1\nGot:      %v\n", len(app.MatchInfo.Matches))
+func TestSimpleCmdLineArguments(t *testing.T) {
+	type test struct {
+		args              []string
+		fileContent       string
+		expectedMatchInfo c.MatchInformation
 	}
 
-	matchInfo := app.MatchInfo.Matches[0]
-
-	if matchInfo.File != filepath.Join(testDir, fileName) {
-		t.Errorf("File found does not match expected\nExpected: %v\nGot:      %v\n", testDir, matchInfo.File)
+	tests := []test{
+		{
+			args:        []string{"myapp", "-d", testDir, "foo"},
+			fileContent: "foo",
+			expectedMatchInfo: c.MatchInformation{
+				Count: 1,
+				Matches: []c.FileInfo{
+					{Key: "foo", File: path.Join(testDir, "simpleSearch"), LineNum: 1},
+				},
+			},
+		},
+		{
+			args:        []string{"myapp", "-i", "-d", testDir, "Foo"},
+			fileContent: "foo",
+			expectedMatchInfo: c.MatchInformation{
+				Count: 1,
+				Matches: []c.FileInfo{
+					{Key: "Foo", File: path.Join(testDir, "caseInsensitiveSearch"), LineNum: 1},
+				},
+			},
+		},
+		{
+			args:        []string{"myapp", "-i", "-d", "", "foo"},
+			fileContent: "foo",
+			expectedMatchInfo: c.MatchInformation{
+				Count: 1,
+				Matches: []c.FileInfo{
+					{Key: "foo", File: path.Join(testDir, "emptyRootDir"), LineNum: 1},
+				},
+			},
+		},
+		{
+			args:        []string{"myapp", "-r", "-d", testDir, "foo"},
+			fileContent: "foo",
+			expectedMatchInfo: c.MatchInformation{
+				Count: 1,
+				Matches: []c.FileInfo{
+					{Key: "foo", File: path.Join(testDir, "recursiveDir/recursiveSearch"), LineNum: 1},
+				},
+			},
+		},
+		{
+			// no search terms
+			args:        []string{"myapp", "-d", testDir},
+			fileContent: "",
+			expectedMatchInfo: c.MatchInformation{
+				Count:   0,
+				Matches: []c.FileInfo{},
+			},
+		},
+		{
+			// binary file
+			args:        []string{"myapp", "-d", testDir},
+			fileContent: "foo" + string([]byte{0}),
+			expectedMatchInfo: c.MatchInformation{
+				Count:   0,
+				Matches: []c.FileInfo{},
+			},
+		},
+		{
+			args:        []string{"myapp", "-d", testDir, "foo"},
+			fileContent: "foo",
+			expectedMatchInfo: c.MatchInformation{
+				Count: 2,
+				Matches: []c.FileInfo{
+					{Key: "foo", File: path.Join(testDir, "firstMatchingFile"), LineNum: 1},
+					{Key: "foo", File: path.Join(testDir, "secondMatchingFile"), LineNum: 1},
+				},
+			},
+		},
+		{
+			args:        []string{"myapp", "-d", testDir, "foo"},
+			fileContent: "foo\n",
+			expectedMatchInfo: c.MatchInformation{
+				Count: 2,
+				Matches: []c.FileInfo{
+					{Key: "foo", File: path.Join(testDir, "multiLineMatches"), LineNum: 1},
+					{Key: "foo", File: path.Join(testDir, "multiLineMatches"), LineNum: 2},
+				},
+			},
+		},
 	}
 
-	if matchInfo.Key != key {
-		t.Errorf("Search terms do not match expected\nExpected: %v\nGot:      %v\n", key, matchInfo.Key)
-	}
+	for _, tt := range tests {
+		t.Run(strings.Join(tt.args, " "), func(t *testing.T) {
+			for _, m := range tt.expectedMatchInfo.Matches {
+				writeTestFile(m.File, tt.fileContent)
+			}
+			os.Args = tt.args
+			args, _, _ := args.ProcessArgs(os.Args[0], os.Args[1:])
+			app := TextFinder{Args: args, MatchInfo: new(c.MatchInformation)}
+			app.FindFiles(testDir)
 
-	if matchInfo.LineNum != 1 {
-		t.Errorf("Wrong line number saved for match\nExpected: %v\nGot:      %v\n", 1, matchInfo.LineNum)
+			if err := checkMatch(tt.expectedMatchInfo, *app.MatchInfo); err != nil {
+				t.Errorf("Test failed: %v", err)
+			}
+			for _, m := range tt.expectedMatchInfo.Matches {
+				removeTestFile(m.File)
+			}
+		})
 	}
-
-	removeTestFile(fileName)
 }
 
-func TestRecursiveSearch(t *testing.T) {
-	recursiveDir := "recursiveDir"
-	if err := os.Mkdir(path.Join(testDir, recursiveDir), 0777); err != nil {
-		t.Errorf("Failed to create subdirectory for recursive search test: %v\n", err)
+func checkMatch(expected, actual c.MatchInformation) error {
+	if expected.Count != actual.Count {
+		return errors.New("matching file count did not match")
 	}
-	fileName := "TestRecursiveSearch"
-	key := "foo"
-	writeTestFile(recursiveDir+"/"+fileName, key)
-
-	os.Args = []string{"myapp", "-r", "-d", fmt.Sprintf("%v", testDir), key}
-	args, _, _ := args.ProcessArgs(os.Args[0], os.Args[1:])
-
-	app := TextFinder{Args: args, MatchInfo: new(c.MatchInformation)}
-
-	app.FindFiles(testDir)
-
-	if len(app.MatchInfo.Matches) != 1 {
-		t.Errorf("Wrong number of file matches\nExpected: 1\nGot:      %v\n", len(app.MatchInfo.Matches))
+	if len(expected.Matches) == 0 && len(actual.Matches) == 0 { // for searches that return no results
+		return nil
 	}
-
-	matchInfo := app.MatchInfo.Matches[0]
-
-	if matchInfo.File != filepath.Join(testDir+"/"+recursiveDir, fileName) {
-		t.Errorf("File found does not match expected\nExpected: %v\nGot:      %v\n", testDir, matchInfo.File)
+	for _, a := range actual.Matches {
+		for _, e := range expected.Matches {
+			if reflect.DeepEqual(a, e) {
+				return nil
+			}
+		}
 	}
-
-	if matchInfo.Key != key {
-		t.Errorf("Search terms do not match expected\nExpected: %v\nGot:      %v\n", key, matchInfo.Key)
-	}
-
-	if matchInfo.LineNum != 1 {
-		t.Errorf("Wrong line number saved for match\nExpected: %v\nGot:      %v\n", 1, matchInfo.LineNum)
-	}
-
-	removeTestFile(recursiveDir + "/" + fileName)
+	return errors.New("file match not found")
 }
 
-func writeTestFile(name string, keyWord string) {
-	path := path.Join(testDir, name)
-	if err := os.WriteFile(path, []byte(keyWord), 0777); err != nil {
+func writeTestFile(filePath string, content string) {
+	fo, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatalf("Failed to open file for writing: %v\n", err)
+	}
+
+	if _, err := fo.Write([]byte(content)); err != nil {
 		log.Fatalf("Failed to write file: %v\n", err)
 	}
+
+	// if err := os.WriteFile(filePath, []byte(content), 0777); err != nil {
+	// 	log.Fatalf("Failed to write file: %v\n", err)
+	// }
 }
 
-func removeTestFile(name string) {
-	path := path.Join(testDir, name)
-	if err := os.Remove(path); err != nil {
+func removeTestFile(filePath string) {
+	if _, err := os.Stat(filePath); errors.Is(err, fs.ErrNotExist) {
+		return
+	}
+	if err := os.Remove(filePath); err != nil {
 		log.Fatalf("Failed to remove file: %v\n", err)
 	}
 }
 
-func directorySetup() {
+func fileSetup() {
 	if _, err := os.Stat(testDir); !os.IsNotExist(err) {
 		if err == nil {
 			if err := os.RemoveAll(testDir); err != nil {
@@ -119,12 +197,12 @@ func directorySetup() {
 		}
 	}
 
-	if err := os.Mkdir(testDir, 0777); err != nil {
+	if err := os.MkdirAll(path.Join(testDir, "recursiveDir"), 0777); err != nil {
 		log.Fatalf("Failed to create testing directory: %v\n", err)
 	}
 }
 
-func directoryTeardown() {
+func fileTeardown() {
 	if err := os.RemoveAll(testDir); err != nil {
 		log.Fatalf("Failed to remove testing directory: %v\n", err)
 	}

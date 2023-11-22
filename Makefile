@@ -1,4 +1,4 @@
-.PHONE: build run clean test
+.PHONY: build clean test
 
 makefile_directory_path := $(realpath $(dir $(realpath $(lastword $(MAKEFILE_LIST)))))
 
